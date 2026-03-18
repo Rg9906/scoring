@@ -3,7 +3,13 @@ from evaluators.exact_match import ExactMatchEvaluator
 from evaluators.semantic_similarity import SemanticSimilarityEvaluator
 from evaluators.grammar_checker import GrammarCheckerEvaluator
 from evaluators.redundancy_checker import RedundancyCheckerEvaluator
+from evaluators.context_evaluator import ContextEvaluator
+from evaluators.nli_checker import NLIChecker
+from evaluators.structure_analyzer import StructureAnalyzer
+from evaluators.theme_evaluator import ThemeEvaluator
+from evaluators.syntax_analyzer import SyntaxAnalyzer
 from scoring.score_aggregator import ScoreAggregator
+from feedback.feedback_generator import FeedbackGenerator
 
 
 class ScoringPipeline:
@@ -16,7 +22,7 @@ class ScoringPipeline:
     
     def __init__(self):
         """
-        Initialize the ScoringPipeline with all necessary components.
+        Initialize ScoringPipeline with all necessary components.
         """
         # Initialize all components
         self.text_normalizer = TextNormalizer()
@@ -24,7 +30,13 @@ class ScoringPipeline:
         self.semantic_similarity_evaluator = SemanticSimilarityEvaluator()
         self.grammar_checker_evaluator = GrammarCheckerEvaluator()
         self.redundancy_checker_evaluator = RedundancyCheckerEvaluator()
+        self.context_evaluator = ContextEvaluator()
+        self.nli_checker = NLIChecker()
+        self.structure_analyzer = StructureAnalyzer()
+        self.theme_evaluator = ThemeEvaluator()
+        self.syntax_analyzer = SyntaxAnalyzer()
         self.score_aggregator = ScoreAggregator()
+        self.feedback_generator = FeedbackGenerator()
     
     def score_sentence(self, user_sentence, reference_sentence):
         """
@@ -48,10 +60,19 @@ class ScoringPipeline:
                 'is_exact_match': True,
                 'semantic_score': 1.0,
                 'grammar_score': 1.0,
+                'context_score': 1.0,
+                'nli_score': 1.0,
+                'structure_score': 1.0,
+                'theme_score': 1.0,
                 'redundancy_score': 0.0,
                 'breakdown': {
-                    'semantic_contribution': 70.0,
-                    'grammar_contribution': 20.0,
+                    'semantic_contribution': 40.0,
+                    'nli_contribution': 20.0,
+                    'context_contribution': 10.0,
+                    'structure_contribution': 15.0,
+                    'grammar_contribution': 10.0,
+                    'syntax_contribution': 7.0,
+                'theme_contribution': 5.0,
                     'redundancy_penalty': 0.0
                 }
             }
@@ -73,14 +94,36 @@ class ScoringPipeline:
             normalized_user
         )
         
+        context_score = self.context_evaluator.evaluate(
+            normalized_user, normalized_reference
+        )
+        
+        nli_score = self.nli_checker.evaluate(
+            normalized_reference, normalized_user
+        )
+        
+        structure_analysis = self.structure_analyzer.analyze(
+            normalized_user, normalized_reference
+        )
+        structure_score = structure_analysis['score']
+        
+        theme_score = self.theme_evaluator.get_score(
+            semantic_score
+        )
+        
+        syntax_analysis = self.syntax_analyzer.analyze(
+            normalized_user, normalized_reference
+        )
+        syntax_score = syntax_analysis['score']
+        
         # Step 4: Aggregate scores
         final_score = self.score_aggregator.get_final_score(
-            semantic_score, grammar_score, redundancy_score
+            semantic_score, nli_score, context_score, structure_score, grammar_score, syntax_score, theme_score, redundancy_score
         )
         
         # Step 5: Get detailed breakdown
         breakdown = self.score_aggregator.get_score_breakdown(
-            semantic_score, grammar_score, redundancy_score
+            semantic_score, nli_score, context_score, structure_score, grammar_score, syntax_score, theme_score, redundancy_score
         )
         
         return {
@@ -88,7 +131,14 @@ class ScoringPipeline:
             'is_exact_match': False,
             'semantic_score': semantic_score,
             'grammar_score': grammar_score,
+            'context_score': context_score,
+            'nli_score': nli_score,
+            'structure_score': structure_score,
+            'theme_score': theme_score,
             'redundancy_score': redundancy_score,
+            'syntax_score': syntax_score,
+            'structure_details': structure_analysis['details'],
+            'syntax_details': syntax_analysis['details'],
             'breakdown': breakdown,
             'normalized_user_sentence': normalized_user,
             'normalized_reference_sentence': normalized_reference

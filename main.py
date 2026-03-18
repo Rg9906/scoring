@@ -9,7 +9,9 @@ def main():
     the scoring results with detailed breakdown.
     """
     print("=== Advanced Sentence Scoring System ===")
-    print("Evaluate sentences based on semantic meaning, grammar, and redundancy")
+    print("Evaluate sentences based on semantic meaning, structure, context, and feedback")
+    print()
+    print("Note: Make sure to run: python -m spacy download en_core_web_sm")
     print()
     
     # Initialize the scoring pipeline
@@ -56,21 +58,9 @@ def main():
                 print("Result: EXACT MATCH!")
                 print("The sentences are identical after normalization.")
             else:
-                print(f"Semantic Similarity: {result['semantic_score']:.3f}")
-                print(f"Grammar Quality: {result['grammar_score']:.3f}")
-                print(f"Redundancy Penalty: {result['redundancy_score']:.3f}")
-                
-                # Show detailed breakdown
-                breakdown = result['breakdown']
-                print("\nScore Breakdown:")
-                print(f"  Semantic (70%): {breakdown['semantic_contribution']:.2f}")
-                print(f"  Grammar (20%): {breakdown['grammar_contribution']:.2f}")
-                print(f"  Redundancy (-10%): -{breakdown['redundancy_penalty']:.2f}")
-                
-                # Show normalized sentences
-                print("\nNormalized Sentences:")
-                print(f"  User:     {result['normalized_user_sentence']}")
-                print(f"  Reference: {result['normalized_reference_sentence']}")
+                # Generate and display feedback
+                feedback = pipeline.feedback_generator.format_feedback(result)
+                print(feedback)
             
         except Exception as e:
             print(f"Error during scoring: {str(e)}")
